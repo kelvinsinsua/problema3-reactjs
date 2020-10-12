@@ -3,8 +3,11 @@ import styled from 'styled-components'
 import axios from 'axios';
 
 const Lista = (props) => {
-  const [loading, setLoading] = useState(true);
-  const [data, setData] = useState(true);
+  const [id, setId] = useState();
+  const [data, setData] = useState([]);
+  const [matches, setMatches] = useState([]);
+  const [minPrice, setMinPrice] = useState();
+  const [maxPrice, setMaxPrice] = useState();
 
   useEffect(() => {
       if(localStorage.getItem("token")){
@@ -17,15 +20,14 @@ const Lista = (props) => {
         })
         .then(function (response) {
             console.log(response)
-            setLoading(false);
             if(Array.isArray(response.data)){
                 setData(response.data)
+                setMatches(response.data)
             }else{
                 setData({error: true})
             }
         })
         .catch(function (error) {
-        setLoading(false);
         setData({error: true})
         });
       }else{
@@ -33,13 +35,51 @@ const Lista = (props) => {
       }
   },[])
  
+  const changeId = (e) => {
+    setId(e.target.value);
+    filter(e.target.value, minPrice, maxPrice);
+  }
+ 
+  const changeMinPrice = (e) => {
+    setMinPrice(e.target.value);
+    filter(id, e.target.value, maxPrice);
+  }
+ 
+  const changeMaxPrice = (e) => {
+    setMaxPrice(e.target.value);
+    filter(id, minPrice, e.target.value);
+  }
+
+  const filter = (id, minPrice, maxPrice) => {
+    if(Array.isArray(data)){
+      let matches = data.filter((item) => {
+        let valid = true;
+        if(id){
+          valid = (item.bookingId.toString().indexOf(id) > -1);
+        }
+        if(minPrice && valid){
+          valid = item.bookingPrice >= minPrice ? true : false;
+        }
+        if(maxPrice && valid){
+          valid = item.bookingPrice <= maxPrice ? true : false;
+        }
+        return valid;
+      })
+
+      
+
+      setMatches(matches);
+    }
+  }
 
   return (
     <div>
       <Banner />
       <Form>
         <FormCard>
-        <Button onClick={() => props.history.push("/")}>Ir al login</Button>
+          <Input type="text" placeholder="BookingId" onChange={changeId}/>
+          <Input type="text" placeholder="Precio mínimo" onChange={changeMinPrice}/>
+          <Input type="text" placeholder="Precio máximo" onChange={changeMaxPrice}/>
           <Title>Lista</Title>
           <GridContainer>
                 <Th>
@@ -58,7 +98,7 @@ const Lista = (props) => {
                 Precio
                 </Th>
             </GridContainer>
-                {Array.isArray(data) ? data.map((item,key) => {
+                {Array.isArray(data) ? matches.map((item,key) => {
                     return(
                         <GridContainer key={key}>
                             <Td>{item.bookingId}</Td>
@@ -81,6 +121,13 @@ const Lista = (props) => {
   );
 }
 
+const Input = styled.input`
+  border: none;
+  outline: none;
+  border-bottom: 1px solid #1A60CA;
+  width: 200px;
+  margin-right: 10px;
+`
 
 const Button = styled.div`
   border: none;
